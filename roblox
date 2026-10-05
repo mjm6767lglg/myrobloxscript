@@ -1,0 +1,80 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local P = Players.LocalPlayer
+local C = P.Character or P.CharacterAdded:Wait()
+local H = C:WaitForChild("HumanoidRootPart")
+local speed = 50
+local flying = false
+local noclip = false
+local save = {}
+local bv = Instance.new("BodyVelocity")
+bv.Parent = H
+
+local function setNC(s)
+    for _, v in ipairs(C:GetDescendants()) do
+        if v:IsA("BasePart") then
+            if s then
+                if save[v] == nil then save[v] = v.CanCollide end
+                v.CanCollide = false
+            else
+                if save[v] ~= nil then
+                    v.CanCollide = save[v]
+                    save[v] = nil
+                end
+            end
+        end
+    end
+end
+
+RS.RenderStepped:Connect(function(dt)
+    if not flying then return end
+    local m = Vector3.zero
+    local c = workspace.CurrentCamera
+    if UIS:IsKeyDown(Enum.KeyCode.W) then m += c.CFrame.LookVector end
+    if UIS:IsKeyDown(Enum.KeyCode.S) then m -= c.CFrame.LookVector end
+    if UIS:IsKeyDown(Enum.KeyCode.A) then m -= c.CFrame.RightVector end
+    if UIS:IsKeyDown(Enum.KeyCode.D) then m += c.CFrame.RightVector end
+    if UIS:IsKeyDown(Enum.KeyCode.Space) then m += Vector3.new(0,1,0) end
+    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then m -= Vector3.new(0,1,0) end
+    bv.Velocity = m.Magnitude > 0 and m.Unit * speed or Vector3.zero
+end)
+
+local gui = Instance.new("ScreenGui")
+gui.Parent = P.PlayerGui
+local fr = Instance.new("Frame")
+fr.Size = UDim2.new(0,240,0,80)
+fr.Position = UDim2.new(0,20,0,20)
+fr.BackgroundColor3 = Color3.fromRGB(20,20,20)
+fr.BackgroundTransparency = 0.4
+fr.Parent = gui
+local tx = Instance.new("TextLabel")
+tx.Size = UDim2.new(1,0,1,0)
+tx.BackgroundTransparency = 1
+tx.TextXAlignment = Enum.TextXAlignment.Left
+tx.TextYAlignment = Enum.TextYAlignment.Top
+tx.TextSize = 16
+tx.TextColor3 = Color3.fromRGB(255,255,255)
+tx.Font = Enum.Font.Code
+tx.Position = UDim2.new(0,12,0,8)
+tx.Parent = fr
+
+local function updUI()
+    tx.Text = "[F] Fly : " .. (flying and "ON" or "OFF") ..
+        "\n[N] NoClip : " .. (noclip and "ON" or "OFF") ..
+        "\nSpeed : " .. speed
+end
+
+updUI()
+
+UIS.InputBegan:Connect(function(i)
+    if i.KeyCode == Enum.KeyCode.F then
+        flying = not flying
+        if not flying then bv.Velocity = Vector3.zero end
+        updUI()
+    elseif i.KeyCode == Enum.KeyCode.N then
+        noclip = not noclip
+        setNC(noclip)
+        updUI()
+    end
+end)
